@@ -15,8 +15,8 @@ Ext.define("branch-creator", {
     config: {
         defaultSettings: {
             artifactType: 'userstory',
-            urlRoot: 'http://www.google.com/#q=',
-            //urlRoot: 'https://stash.guidewire.com
+            //urlRoot: 'http://www.google.com/#q=',
+            urlRoot: null,
             urlSuffix: '/plugins/servlet/create-branch?issueKey={0}&issueType={1}&issueSummary={2}',
             issueType: 'Bug'
         }
@@ -29,7 +29,12 @@ Ext.define("branch-creator", {
         this.logger.log('launch', artifactType, localStorage);
 
         if (!artifactType){
-            Rally.ui.notify.Notifier.showMessage({message: "Please configure an artifact type."});
+            Rally.ui.notify.Notifier.showError({message: "Please configure an artifact type."});
+            return;
+        }
+
+        if (!this.getUrlRoot()){
+            Rally.ui.notify.Notifier.showError({message: "Please configure a Bit bucket server in the app settings."});
             return;
         }
 
@@ -158,6 +163,11 @@ Ext.define("branch-creator", {
     },
     getUrlRoot: function(){
         var url = this.getSetting('urlRoot');
+
+        if (!url){
+            return null; 
+        }
+
         //remove the trailing slash, if its there
         if (/.*\/$/.test(url)){
             url = url.slice(0, -1);
