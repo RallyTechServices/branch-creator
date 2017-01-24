@@ -3,13 +3,13 @@
 <head>
     <title>Branch Creator</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Mon Jan 23 2017 19:54:41 GMT-0700 (MST) -->
+    <!--  Build Date: Mon Jan 23 2017 20:06:19 GMT-0700 (MST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Mon Jan 23 2017 19:54:41 GMT-0700 (MST)";
+        var APP_BUILD_DATE = "Mon Jan 23 2017 20:06:19 GMT-0700 (MST)";
         var STORY    = "US1123";
         var BUILDER  = "kcorkan";
-        var CHECKSUM = 8961321992;
+        var CHECKSUM = 9091652393;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -654,6 +654,8 @@ Ext.define("branch-creator", {
 
         this.logger.log('launchWindow',url);
         window.open(url);
+
+        Rally.ui.notify.Notifier.show({message: "Create Branch initiated for " + artifactRecord.get('FormattedID')});
 
         this.buildGrid();
     },
