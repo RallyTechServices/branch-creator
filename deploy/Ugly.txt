@@ -3,10 +3,10 @@
 <head>
     <title>Branch Creator</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Mon Jan 23 2017 19:54:42 GMT-0700 (MST) -->
+    <!--  Build Date: Mon Jan 23 2017 20:06:19 GMT-0700 (MST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Mon Jan 23 2017 19:54:42 GMT-0700 (MST)";
+        var APP_BUILD_DATE = "Mon Jan 23 2017 20:06:19 GMT-0700 (MST)";
         var CHECKSUM = [%= checksum %];
     </script>
     

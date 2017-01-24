@@ -179,6 +179,8 @@ Ext.define("branch-creator", {
         this.logger.log('launchWindow',url);
         window.open(url);
 
+        Rally.ui.notify.Notifier.show({message: "Create Branch initiated for " + artifactRecord.get('FormattedID')});
+
         this.buildGrid();
     },
     fetchArtifact: function(type, artifactObjectID, fetchList){
