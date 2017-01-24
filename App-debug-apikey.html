@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Branch Creator</title>
+    <script type="text/javascript">
+        var APP_BUILD_DATE = "Mon Jan 23 2017 19:54:41 GMT-0700 (MST)";
+    </script>
+    
+    <script type="text/javascript" src="https://rally1.rallydev.com/apps/2.1/sdk-debug.js?apiKey=_PUT_APIKEY_HERE_"></script>
+
+    <script type="text/javascript">
+        Rally.onReady(function() {
+            Rally.loadScripts(["src/javascript/utils/__ts-info-link.js","src/javascript/utils/__ts-logger.js","src/javascript/utils/menu-item-create-branch.js","src/javascript/utils/overrides.js","src/javascript/app.js"],
+	            function() {
+	                Rally.launchApp('branch-creator', {
+	                    name: 'Branch Creator'
+	                })
+	            }, true);
+        });
+    </script>
+<link rel="stylesheet" type="text/css" href="src/style/app.css">
+
+</head>
+<body></body>
+</html>
