@@ -3,13 +3,13 @@
 <head>
     <title>Branch Creator</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Mon Jan 23 2017 20:11:16 GMT-0700 (MST) -->
+    <!--  Build Date: Tue Jan 24 2017 15:12:41 GMT-0700 (MST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Mon Jan 23 2017 20:11:16 GMT-0700 (MST)";
+        var APP_BUILD_DATE = "Tue Jan 24 2017 15:12:41 GMT-0700 (MST)";
         var STORY    = "US1123";
         var BUILDER  = "kcorkan";
-        var CHECKSUM = 9256830885;
+        var CHECKSUM = 9254854849;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -641,7 +641,7 @@ Ext.define("branch-creator", {
         var url = this.getSetting('urlRoot');
 
         if (!url){
-            return null; 
+            return null;
         }
 
         //remove the trailing slash, if its there
@@ -649,7 +649,7 @@ Ext.define("branch-creator", {
             url = url.slice(0, -1);
         }
         //add http prefix if they did not add it
-        if (!/http:\/\//.test(url) || !/https:\/\//.test(url)){
+        if (!/http:\/\//.test(url) && !/https:\/\//.test(url)){
             url = "http://" + url;
         }
         return url;

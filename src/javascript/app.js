@@ -165,7 +165,7 @@ Ext.define("branch-creator", {
         var url = this.getSetting('urlRoot');
 
         if (!url){
-            return null; 
+            return null;
         }
 
         //remove the trailing slash, if its there
@@ -173,7 +173,7 @@ Ext.define("branch-creator", {
             url = url.slice(0, -1);
         }
         //add http prefix if they did not add it
-        if (!/http:\/\//.test(url) || !/https:\/\//.test(url)){
+        if (!/http:\/\//.test(url) && !/https:\/\//.test(url)){
             url = "http://" + url;
         }
         return url;
