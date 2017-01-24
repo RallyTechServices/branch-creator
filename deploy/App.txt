@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Branch Creator</title>
+    <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
+    <!--  Build Date: Mon Jan 23 2017 19:54:41 GMT-0700 (MST) -->
+    
+    <script type="text/javascript">
+        var APP_BUILD_DATE = "Mon Jan 23 2017 19:54:41 GMT-0700 (MST)";
+        var STORY    = "US1123";
+        var BUILDER  = "kcorkan";
+        var CHECKSUM = 8961321992;
+    </script>
+    
+    <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
+    <!-- our highcharts (needed so that we can add patterns) -->
+    <script type="text/javascript" src="/apps/2.1/lib/analytics/analytics-all.js"></script>
+
+    <script type="text/javascript">
+        Rally.onReady(function() {
+             
+/**
+ * A link that pops up a version dialog box
+ */
+
+Ext.define('Rally.technicalservices.InfoLink',{
+    extend: 'Rally.ui.dialog.Dialog',
+    alias: 'widget.tsinfolink',
+    
+    /**
+     * @cfg {String} informationHtml
+     * Additional text to be displayed on the popup dialog (for exmaple,
+     * to add a description of the app's use or functionality)
+     */
+    informationHtml: null,
+    
+    /**
+     * 
+     * cfg {String} title
+     * The title for the dialog box
+     */
+    title: "Build Information",
+    
+    defaults: { padding: 5, margin: 5 },
+
+    closable: true,
+     
+    draggable: true,
+
+    autoShow: true,
+   
+    width: 350,
+    
+    informationalConfig: null,
+    
+    items: [{xtype:'container', itemId:'information' }],
+    
+    initComponent: function() {
+        var id = Ext.id(this);
+        this.title =  "<span class='icon-help'> </span>" + this.title;
+        this.callParent(arguments);
+    },
+    
+    _generateChecksum: function(string){
+        var chk = 0x12345678,
+            i;
+        string = string.replace(/var CHECKSUM = .*;/,"");
+        string = string.replace(/var BUILDER  = .*;/,"");
+        string = string.replace(/\s/g,"");  //Remove all whitespace from the string.
+       
+        for (i = 0; i < string.length; i++) {
+            chk += (string.charCodeAt(i) * i);
+        }
+   
+        return chk;
+    },
+    
+    _checkChecksum: function(container) {
+        var deferred = Ext.create('Deft.Deferred');
+        var me = this;
+        
+        Ext.Ajax.request({
+            url: document.URL,
+            params: {
+                id: 1
+            },
+            success: function (response) {
+                text = response.responseText;
+                if ( CHECKSUM ) {
+                    var stored_checksum = me._generateChecksum(text);
+                    if ( CHECKSUM !== stored_checksum ) {
+                        deferred.resolve(false);
+                        return;
+                    }
+                }
+                deferred.resolve(true);
+            }
+        });
+        
+        return deferred.promise;
+    },
+    
+    _addToContainer: function(container){
+        var config = Ext.apply({
+            xtype:'container',
+            height: 200,
+            overflowY: true
+        }, this.informationalConfig);
+        
+        container.add(config);
+    },
+    
+    afterRender: function() {
+        var app = Rally.getApp();
+        
+        if ( !Ext.isEmpty( this.informationalConfig ) ) {
+            var container = this.down('#information');
+            this._addToContainer(container);
+            
+        }
+        
+        if (! app.isExternal() ) {
+            this._checkChecksum(app).then({
+                scope: this,
+                success: function(result){
+                    if ( !result ) {
+                        this.addDocked({
+                            xtype:'container',
+                            cls: 'build-info',
+                            dock: 'bottom',
+                            padding: 2,
+                            html:'<span class="icon-warning"> </span>Checksums do not match'
+                        });
+                    }
+                },
+                failure: function(msg){
+                    console.log("oops:",msg);
+                }
+            });
+        } else {
+            this.addDocked({
+                xtype:'container',
+                cls: 'build-info',
+                padding: 2,
+                dock: 'bottom',
+                html:'... Running externally'
+            });
+        }
+        this.callParent(arguments);
+    },
+    
+    beforeRender: function() {
+        var me = this;
+        this.callParent(arguments);
+
+        if (this.informationHtml) {
+            this.addDocked({
+                xtype: 'component',
+                componentCls: 'intro-panel',
+                padding: 2,
+                html: this.informationHtml,
+                doc: 'top'
+            });
+        }
+        
+        this.addDocked({
+            xtype:'container',
+            cls: 'build-info',
+            padding: 2,
+            dock:'bottom',
+            html:"This app was created by the CA AC Technical Services Team."
+        });
+        
+        if ( APP_BUILD_DATE ) {
+            var build_html = Ext.String.format("Built on: {0} <br/>Built by: {1}",
+                APP_BUILD_DATE,
+                BUILDER);
+                
+            if ( STORY ) {
+                build_html = build_html + "<br/>Source story: " + STORY;
+            }
+                
+            this.addDocked({
+                xtype:'container',
+                cls: 'build-info',
+                padding: 2,
+                dock: 'bottom',
+                html: build_html
+            });
+        }
+    }
+});
+
+/*
+ */
+Ext.define('Rally.technicalservices.Logger',{
+    constructor: function(config){
+        Ext.apply(this,config);
+    },
+    log: function(args){
+        var timestamp = "[ " + Ext.util.Format.date(new Date(), "Y-m-d H:i:s.u") + " ]";
+        //var output_args = arguments;
+        //output_args.unshift( [ "[ " + timestamp + " ]" ] );
+        //output_args = Ext.Array.push(output_args,arguments);
+        
+        var output_args = [];
+        output_args = Ext.Array.push(output_args,[timestamp]);
+        output_args = Ext.Array.push(output_args, Ext.Array.slice(arguments,0));
+
+        window.console && console.log.apply(console,output_args);
+    }
+
+});
+
+Ext.define('CA.agile.technicalservices.CreateBranchRecordMenuItem', {
+    extend: 'Rally.ui.menu.item.RecordMenuItem',
+    alias: 'widget.createbranchrecordmenuitem',
+
+    clickHideDelay: 1,
+
+    config: {
+
+        /**
+         * @cfg {Rally.data.wsapi.Model}
+         * The record of the menu
+         */
+        record: undefined,
+
+        /**
+         * @cfg {Function}
+         *
+         * A function that should return true if this menu item should show.
+         * @param record {Rally.data.wsapi.Model}
+         * @return {Boolean}
+         */
+        predicate: function (record) {
+            return true;
+        },
+
+        handler: function(){
+            console.log('createbranch', this.record);
+            this.view.fireEvent('createbranch', this.record);
+        },
+
+        /**
+         * @cfg {String}
+         * The display string
+         */
+
+            text: 'Create Branch...',
+            cls: 'artifact-icon icon-predecessor',
+
+
+    },
+    constructor:function (config) {
+        config = config || {};
+
+        this.initConfig(config);
+        this.callParent(arguments);
+    }
+});
+Ext.override(Rally.ui.menu.DefaultRecordMenu, {
+    //Override the getMenuItems function to return only the menu items that we are interested in.
+    _getMenuItems: function() {
+        var record = this.getRecord(),
+            items = [{
+                xtype: 'createbranchrecordmenuitem',
+                view: this.view,
+                record: record
+            }],
+            popoverPlacement = this.popoverPlacement || Rally.ui.popover.Popover.DEFAULT_PLACEMENT;
+
+        if (this.showInlineAdd) {
+            items.push({
+                xtype: 'rallyrecordmenuiteminlineaddchild',
+                view: this.view,
+                record: record
+            });
+            items.push({
+                xtype: 'rallyrecordmenuiteminlineaddpeer',
+                view: this.view,
+                record: record
+            });
+            items.push({
+                xtype: 'rallyrecordmenuitemaddexistingtestcases',
+                view: this.view,
+                record: record
+            });
+            items.push({
+                xtype: 'rallyrecordmenuitemaddexistingdefects',
+                view: this.view,
+                record: record
+            });
+        } else {
+            if (this.showAddTasks !== false) {
+                items.push({
+                    xtype: 'rallyrecordmenuitemaddtask',
+                    record: record,
+                    owningEl: this.owningEl,
+                    popoverPlacement: popoverPlacement
+                });
+            }
+
+            if (this.showAddDefects !== false) {
+                items.push({
+                    xtype: 'rallyrecordmenuitemadddefect',
+                    record: record,
+                    owningEl: this.owningEl,
+                    popoverPlacement: popoverPlacement
+                });
+            }
+
+            if (this.showAddTestCases !== false) {
+                items.push({
+                    xtype: 'rallyrecordmenuitemaddtestcase',
+                    record: record,
+                    owningEl: this.owningEl,
+                    popoverPlacement: popoverPlacement
+                });
+            }
+
+            if (this.showAddChildMenuItem !== false) {
+                items.push({
+                    xtype: 'rallyrecordmenuitemaddchild',
+                    record: record
+                });
+            }
+        }
+
+        if (this.showCopyTasksFrom !== false) {
+            items.push({
+                xtype: 'rallyrecordmenuitemcopytasksfrom',
+                record: record
+            });
+        }
+
+        items.push({
+            xtype: 'menuseparator',
+            margin: 0,
+            padding: 0
+        });
+
+        items.push(
+            {
+                xtype: 'rallyrecordmenuitemshowdetails',
+                record: record
+            },
+            {
+                xtype: 'rallyrecordmenuitemedit',
+                record: record
+            },
+            {
+                xtype: 'rallyrecordmenuitemruntestset',
+                record: record,
+                actionScope: this
+            }
+        );
+
+        if (this.showCopyMenuItem !== false) {
+            items.push({
+                    xtype: 'rallyrecordmenuitemcopy',
+                    record: record,
+                    beforeAction: this.getOnBeforeRecordMenuCopy(),
+                    afterAction: this.getOnRecordMenuCopy(),
+                    actionScope: this
+                }
+            );
+        }
+
+        items.push(
+            {
+                xtype: 'rallyrecordmenuitemcopyuser',
+                record: record
+            }
+        );
+
+        items.push({
+            xtype: 'menuseparator',
+            margin: 0,
+            padding: 0
+        });
+
+        if (this.showRankMenuItems !== false &&
+            (!_.isFunction(this.shouldRecordBeExtremeRankable) || this.shouldRecordBeExtremeRankable(record))) {
+            items.push(
+                {
+                    xtype: 'rallyrecordmenuitemrankextreme',
+                    rankRecordHelper: this.getRankRecordHelper(),
+                    rankPosition: 'highest',
+                    record: record,
+                    beforeAction: this.getOnBeforeRecordMenuRankHighest(),
+                    actionScope: this
+                },
+                {
+                    xtype: 'rallyrecordmenuitemrankextreme',
+                    rankRecordHelper: this.getRankRecordHelper(),
+                    rankPosition: 'lowest',
+                    record: record,
+                    beforeAction: this.getOnBeforeRecordMenuRankLowest(),
+                    actionScope: this
+                }
+            );
+
+            if (!_.isFunction(this.shouldRecordBeRankable) || this.shouldRecordBeRankable(record)) {
+                items.push(
+                    {
+                        xtype: 'rallyrecordmenuitemmovetoposition',
+                        record: record,
+                        rankRecordHelper: this.getRankRecordHelper()
+                    }
+                );
+            }
+
+            items.push(
+                {
+                    xtype: 'menuseparator',
+                    margin: '0 0 0 0',
+                    padding: '0 0 0 0'
+                });
+        }
+
+        if (this.showSplitMenuItem !== false) {
+            items.push(
+                {
+                    xtype: 'rallyrecordmenuitemsplit',
+                    record: record
+                },
+                {
+                    xtype: 'menuseparator',
+                    margin: '0 0 0 0',
+                    padding: '0 0 0 0'
+                }
+            );
+        }
+
+        if (this.showWatchMenuItem !== false && Rally.data.notifications.Api.enabled) {
+            items.push(
+                {
+                    xtype: 'rallyrecordmenuitemwatch',
+                    record: record,
+                    actionScope: this,
+                    enableBetaBadge: true
+                },
+                {
+                    xtype: 'menuseparator',
+                    margin: '0 0 0 0',
+                    padding: '0 0 0 0'
+                }
+            );
+        }
+
+        if (this.collectionStore && _.isFunction(this.shouldBeRemovable) && this.shouldBeRemovable(record)) {
+            items.push({
+                xtype: 'rallyrecordmenuitemremove',
+                actionScope: this,
+                afterAction: this.onRecordMenuRemove,
+                collectionStore: this.collectionStore,
+                record: record
+            });
+        }
+
+        if (this.showDeleteMenuItem !== false) {
+            items.push(
+                {
+                    xtype: 'rallyrecordmenuitemdelete',
+                    record: record,
+                    beforeAction: this.getOnBeforeRecordMenuDelete(),
+                    afterAction: this.getOnRecordMenuDelete(),
+                    actionScope: this
+                }
+            );
+        }
+
+        return items;
+    }
+});
+Ext.define("branch-creator", {
+    extend: 'Rally.app.App',
+    componentCls: 'app',
+    logger: new Rally.technicalservices.Logger(),
+    defaults: { margin: 10 },
+    items: [
+        {xtype:'container',itemId:'message_box',tpl:'Hello, <tpl>{_refObjectName}</tpl>'},
+        {xtype:'container',itemId:'display_box'}
+    ],
+
+    integrationHeaders : {
+        name : "branch-creator"
+    },
+
+    config: {
+        defaultSettings: {
+            artifactType: 'userstory',
+            urlRoot: 'http://www.google.com/#q=',
+            //urlRoot: 'https://stash.guidewire.com
+            urlSuffix: '/plugins/servlet/create-branch?issueKey={0}&issueType={1}&issueSummary={2}',
+            issueType: 'Bug'
+        }
+    },
+    artifactFetchList: ['FormattedID','Name'],
+
+    launch: function() {
+
+        var artifactType = this.getArtifactType();
+        this.logger.log('launch', artifactType, localStorage);
+
+        if (!artifactType){
+            Rally.ui.notify.Notifier.showMessage({message: "Please configure an artifact type."});
+            return;
+        }
+
+        var previousArtifact = this.getPreviousArtifact(this.getArtifactType());
+        if (previousArtifact){
+            this.fetchArtifact(artifactType, previousArtifact, this.artifactFetchList).then({
+                success: this.launchWindow,
+                failure: this.showErrorNotification,
+                scope: this
+            });
+        } else {
+            this.buildGrid();
+        }
+    },
+    getArtifactType: function(){
+        return this.getSetting('artifactType');
+    },
+    getPreviousArtifact: function(type){
+        var artifactUrl = localStorage && localStorage.getItem('previous-hash') || null;
+        if (!artifactUrl){
+            return null;
+        }
+
+        var artifactInfo = artifactUrl.split('/');
+        this.logger.log('getPreviousArtifact', artifactUrl, artifactInfo);
+
+        if (artifactInfo && artifactInfo.length > 1){
+            var artifactId = artifactInfo[artifactInfo.length-1],
+                artifactType = artifactInfo[artifactInfo.length-2];
+
+            this.logger.log('getPreviousArtifact', type, artifactType, artifactId);
+            if (artifactType === type){
+                return artifactId;
+            }
+        }
+        return null;
+    },
+    buildGrid: function(){
+        this.logger.log('buildGrid');
+
+        this.removeAll();
+
+        var modelNames = [this.getArtifactType()],
+            context = this.getContext();
+
+        Ext.create('Rally.data.wsapi.TreeStoreBuilder').build({
+            models: modelNames,
+            autoLoad: true,
+            enableHierarchy: false
+        }).then({
+            success: function(store){
+                this.add({
+                    xtype: 'rallygridboard',
+                    context: context,
+                    modelNames: modelNames,
+                    toggleState: 'grid',
+                    stateful: false,
+                    plugins: [
+                        {
+                            ptype: 'rallygridboardinlinefiltercontrol',
+                            inlineFilterButtonConfig: {
+                                stateful: true,
+                                stateId: context.getScopedStateId('filters'),
+                                modelNames: modelNames,
+                                inlineFilterPanelConfig: {
+                                    quickFilterPanelConfig: {
+                                        defaultFields: [
+                                            'ArtifactSearch',
+                                            'Owner'
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            ptype: 'rallygridboardfieldpicker',
+                            headerPosition: 'left',
+                            modelNames: modelNames,
+                            stateful: true,
+                            stateId: context.getScopedStateId('columns-example')
+                        }
+                    ],
+                    gridConfig: {
+                        store: store,
+                        columnCfgs: [
+                            'FormattedID',
+                            'Name',
+                            'State',
+                            'Priority',
+                            'Severity'
+                        ],
+                        viewConfig: {
+                            xtype: 'rallytreeview',
+                            enableTextSelection: false,
+                            animate: false,
+                            loadMask: false,
+                            forceFit: true,
+                            plugins: [
+                                'rallytreeviewdragdrop',
+                                'rallyviewvisibilitylistener'
+                            ],
+                            listeners: {
+                                createbranch: this.launchWindow,
+                                scope: this
+                            }
+                        }
+                    },
+                    height: this.getHeight()
+                });
+            },
+            scope: this
+        });
+    },
+    showErrorNotification: function(msg){
+        this.logger.log('showErrorNotification', msg);
+        Rally.ui.notify.Notifier.showError({message: msg});
+    },
+    getCreateBranchURL: function(artifactRecord){
+        var urlBase = this.getUrlRoot(),
+            createBranchSuffix = this.getSetting('urlSuffix'),
+            url = urlBase + Ext.String.format(createBranchSuffix, artifactRecord.get('FormattedID'), this.getIssueType(), artifactRecord.get('Name'));
+
+        this.logger.log('getCreateBranchURL', urlBase, url);
+
+        return encodeURI(url);
+    },
+    getUrlRoot: function(){
+        var url = this.getSetting('urlRoot');
+        //remove the trailing slash, if its there
+        if (/.*\/$/.test(url)){
+            url = url.slice(0, -1);
+        }
+        //add http prefix if they did not add it
+        if (!/http:\/\//.test(url) || !/https:\/\//.test(url)){
+            url = "http://" + url;
+        }
+        return url;
+    },
+    getIssueType: function(){
+        return this.getSetting('issueType');
+    },
+
+    launchWindow: function(artifactRecord){
+
+        var url = this.getCreateBranchURL(artifactRecord);
+
+        this.logger.log('launchWindow',url);
+        window.open(url);
+
+        this.buildGrid();
+    },
+    fetchArtifact: function(type, artifactObjectID, fetchList){
+        this.logger.log('fetchArtifact', type, artifactObjectID);
+        var deferred = Ext.create('Deft.Deferred');
+        if (!artifactObjectID || !type){
+            deferred.reject("Please provide a valid artifact ObjectID or artifact Type");
+        } else {
+            this.loadArtifactModel(type).then({
+                success: function(model){
+                    model.load(artifactObjectID, {
+                        fetch: fetchList,
+                        callback: function(result, operation) {
+                            if(operation.wasSuccessful()) {
+                                deferred.resolve(result);
+                            } else {
+                                deferred.reject("Error loading artifact [" + artifactObjectID + "]:  " + operation.error.errors.join(','));
+                            }
+                        }
+                    });
+                },
+                failure: function(){
+                    deferred.reject('Error loading artifact model: ' + this.getArtifactType());
+                },
+                scope: this
+            });
+        }
+        return deferred.promise;
+    },
+    loadArtifactModel: function(type){
+        var deferred = Ext.create('Deft.Deferred');
+        Rally.data.ModelFactory.getModel({
+            type: type,
+            success: function(model) {
+                deferred.resolve(model);
+            }
+        });
+        return deferred;
+    },
+    getSettingsFields: function(){
+        return [{
+            name: 'urlRoot',
+            xtype: 'rallytextfield',
+            width: 500,
+            labelWidth: 150,
+            fieldLabel: 'Bit Bucket Server',
+            labelAlign: 'right',
+            emptyText: 'https://bitbucket.mydomain.com',
+            maskRe:  /[a-zA-Z0-9\.\-]/
+        }];
+    },
+    getOptions: function() {
+        return [
+            {
+                text: 'About...',
+                handler: this._launchInfo,
+                scope: this
+            }
+        ];
+    },
+    
+    _launchInfo: function() {
+        if ( this.about_dialog ) { this.about_dialog.destroy(); }
+        this.about_dialog = Ext.create('Rally.technicalservices.InfoLink',{});
+    },
+    
+    isExternal: function(){
+        return typeof(this.getAppId()) == 'undefined';
+    }
+    
+});
+
+            
+               Rally.launchApp('branch-creator', {
+                   name: 'Branch Creator'
+               });
+        });
+    </script>
+    
+    <style type="text/css">
+
+.app {
+}
+.tsinfolink {
+    position:absolute;
+    right:0px;
+    width: 14px;
+    height: 14px;
+    border-radius: 7px;
+    text-align: center;
+    color: white;
+    background: #C0C0C0;
+    border-style: solid;
+    border-width: 1px;
+    margin-top: 25px;
+    margin-right: 5px;
+    cursor: pointer;
+}
+    </style>
+
+</head>
+<body></body>
+</html>
