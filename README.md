@@ -6,6 +6,10 @@ the User Story Formatted ID and Name.  The create branch window will open in a n
 If the page that this app was on is not navigated to from a User Story detail page, then a user story grid will be displayed.  The grid will have an additional
 menu item called "Create Branch..." that will open a window to create a new Bit Bucket branch with the User Story Formatted ID and Name.
 
+If the user was on a page with a quick detail page open, the branch creator will attempt to create a branch for the item in the QDP page.
+
+Caveat:  If the page with the QDP window is on the SAME TAB (e.g. Home) as the Branch Creator app, the Branch creator app will not be able to determine which Artifact ID to use and will not create a branch.  
+
 ### App Settings
 Bit Bucket Server
 This is the Bit Bucket server root.  Any of the following would be accepted formats: 
