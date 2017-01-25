@@ -22,7 +22,7 @@ Ext.define("branch-creator", {
         }
     },
     artifactFetchList: ['FormattedID','Name'],
-
+    RALLY_TABS: ["My Home","Plan","Portfolio","Track","Quality","Reports"],
     launch: function() {
 
         var artifactType = this.getArtifactType();
@@ -59,14 +59,34 @@ Ext.define("branch-creator", {
         }
 
         var artifactInfo = artifactUrl.split('/');
-        this.logger.log('getPreviousArtifact', artifactUrl, artifactInfo);
+        this.logger.log('getPreviousArtifact url', artifactUrl, artifactInfo, type);
 
         if (artifactInfo && artifactInfo.length > 1){
+
             var artifactId = artifactInfo[artifactInfo.length-1],
                 artifactType = artifactInfo[artifactInfo.length-2];
 
-            this.logger.log('getPreviousArtifact', type, artifactType, artifactId);
+            this.logger.log('getPreviousArtifact artifactType, artifactId', artifactType, artifactId);
             if (artifactType === type){
+                return artifactId;
+            } else {
+                //artifact ID should be the name of the page that they were last at
+                var page = artifactId;
+                if (Number(page) > 0){
+                    page = artifactType + '/' + page;
+                }
+                this.logger.log('Page not a detail page', page);
+                //Now loop through the tabs to see which one they were last on
+                var re = new RegExp("\\/" + page + "\\?qdp=%2Fdetail%2F" + type + "%2F(\\d+)");
+                artifactId = null;
+                Ext.Array.each(this.RALLY_TABS, function(tab){
+                    var match = localStorage[tab].match(re);
+                    this.logger.log('match', tab, localStorage[tab], match);
+                    if (match && match.length > 1){
+                        artifactId = match[1];
+                        return false;
+                    }
+                }, this);
                 return artifactId;
             }
         }
